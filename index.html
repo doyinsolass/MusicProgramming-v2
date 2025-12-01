@@ -53,6 +53,7 @@
 
   <section>
     <h2>Effects</h2>
+    <!-- change: load responses  -->
 
     <div>
       <h3>Reverb</h3>
@@ -81,12 +82,12 @@
     <div>
       <h3>Panner</h3>
       <label>Panning <input type="range" id="panSlider" min="-1" max="1" step="0.1" value="0" /></label>
-      <label><input type="checkbox" id="mousePanToggle" />Mouse</label>
+      <label><input type="checkbox" id="mousePanToggle" />Mouse panning</label>
     </div>
 
     <div>
       <h3>Delay</h3>
-      <label>Time <input type="range" id="delayTime" min="0" max="1" step="0.01" value="0.25" /></label>
+      <label>Time (sec) <input type="range" id="delayTime" min="0" max="1" step="0.01" value="0.25" /></label>
       <label>Feedback <input type="range" id="delayFeedback" min="0" max="0.95" step="0.01" value="0.4" /></label>
       <label>Mix <input type="range" id="delayMix" min="0" max="1" step="0.01" value="0.5" /></label>
       <button id="delayEnableBtn">Enable</button>
@@ -96,11 +97,11 @@
     <div>
       <h3>Distortion</h3>
       <label>Amount <input type="range" id="distAmount" min="0" max="1000" step="10" value="200" /></label>
-      <select id="distOversample">
+      <label>Oversample <select id="distOversample">
         <option value="none">none</option>
         <option value="2x" selected>2x</option>
         <option value="4x">4x</option>
-      </select>
+      </select></label>
       <label>Mix <input type="range" id="distMix" min="0" max="1" step="0.01" value="0.5" /></label>
       <button id="distEnableBtn">Enable</button>
       <button id="distDisableBtn">Disable</button>
@@ -111,10 +112,11 @@
 
   <section>
     <h2>Filters</h2>
+    <!-- 5 filters-->
 
     <div>
       <h3>Low-pass</h3>
-      <label>Freq <input type="range" id="lpFreq" min="50" max="12000" step="1" value="1200" /></label>
+      <label>Frequency <input type="range" id="lpFreq" min="50" max="12000" step="1" value="1200" /></label>
       <label>Q <input type="range" id="lpQ" min="0.1" max="20" step="0.1" value="1" /></label>
       <button id="lpEnableBtn">Enable</button>
       <button id="lpDisableBtn">Disable</button>
@@ -145,10 +147,10 @@
     </div>
 
     <div>
-      <h3>Peaking</h3>
+      <h3>Peaking EQ</h3>
       <label>Freq <input type="range" id="pkFreq" min="100" max="8000" step="1" value="2000" /></label>
       <label>Q <input type="range" id="pkQ" min="0.1" max="20" step="0.1" value="1" /></label>
-      <label>Gain <input type="range" id="pkGain" min="-20" max="20" step="0.5" value="0" /></label>
+      <label>Gain (dB) <input type="range" id="pkGain" min="-20" max="20" step="0.5" value="0" /></label>
       <button id="pkEnableBtn">Enable</button>
       <button id="pkDisableBtn">Disable</button>
     </div>
@@ -164,7 +166,7 @@
       <option value="sawtooth">sawtooth</option>
       <option value="triangle">triangle</option>
     </select></label>
-    <label>Freq <input type="range" id="oscFreq" min="20" max="20000" step="1" value="220" /></label>
+    <label>Frequency <input type="range" id="oscFreq" min="20" max="20000" step="1" value="220" /></label>
     <label>Detune <input type="range" id="oscDetune" min="-1200" max="1200" step="1" value="0" /></label>
     <label>Gain <input type="range" id="oscGain" min="0" max="1" step="0.01" value="0.5" /></label>
     <button id="oscStartBtn">Start</button>

@@ -22,6 +22,7 @@ let oscNode, oscGainNode;
 
 let rhythmBuffers = { kick: null, snare: null, hat: null };
 let rhythmIsPlaying = false;
+let _skipNextUpdate = false;
 
 const els = {
   fileInput: document.getElementById('fileInput'),
@@ -40,6 +41,7 @@ const els = {
   fftSizeSelect: document.getElementById('fftSizeSelect'),
   vizModeSelect: document.getElementById('vizModeSelect'),
 
+  // reverb controls
   impulseSelect: document.getElementById('impulseSelect'),
   reverbMix: document.getElementById('reverbMix'),
   reverbEnableBtn: document.getElementById('reverbEnableBtn'),
@@ -49,7 +51,6 @@ const els = {
   compKnee: document.getElementById('compKnee'),
   compRatio: document.getElementById('compRatio'),
   compAttack: document.getElementById('compAttack'),
-  
   compRelease: document.getElementById('compRelease'),
   compAddBtn: document.getElementById('compAddBtn'),
   compRemoveBtn: document.getElementById('compRemoveBtn'),
@@ -86,14 +87,12 @@ const els = {
 
   ntFreq: document.getElementById('ntFreq'),
   ntQ: document.getElementById('ntQ'),
-
   ntEnableBtn: document.getElementById('ntEnableBtn'),
   ntDisableBtn: document.getElementById('ntDisableBtn'),
 
   pkFreq: document.getElementById('pkFreq'),
   pkQ: document.getElementById('pkQ'),
   pkGain: document.getElementById('pkGain'),
-
   pkEnableBtn: document.getElementById('pkEnableBtn'),
   pkDisableBtn: document.getElementById('pkDisableBtn'),
 
@@ -101,7 +100,6 @@ const els = {
   oscFreq: document.getElementById('oscFreq'),
   oscDetune: document.getElementById('oscDetune'),
   oscGain: document.getElementById('oscGain'),
-
   oscStartBtn: document.getElementById('oscStartBtn'),
   oscStopBtn: document.getElementById('oscStopBtn'),
 
@@ -136,7 +134,7 @@ function connectMediaElement() {
   }
 }
 
-els.fileInput.addEventListener('change', async (e) => {
+els.fileInput.addEventListener('change', async function (e) {
   const file = e.target.files?.[0];
   if (!file) return;
 
@@ -243,12 +241,17 @@ function draw() {
 draw();
 
 els.smoothingSlider.addEventListener('input', () => {
-  if (analyser) analyser.smoothingTimeConstant = parseFloat(els.smoothingSlider.value);
+  if (analyser) {
+    const smoothVal = parseFloat(els.smoothingSlider.value);
+    analyser.smoothingTimeConstant = smoothVal;
+  }
 });
+
 els.fftSizeSelect.addEventListener('change', () => {
   if (analyser) analyser.fftSize = parseInt(els.fftSizeSelect.value, 10);
 });
-els.vizModeSelect.addEventListener('change', (e) => {
+
+els.vizModeSelect.addEventListener('change', function (e) {
   analyserMode = e.target.value;
 });
 
@@ -277,7 +280,9 @@ els.reverbDisableBtn.addEventListener('click', () => {
     reverbDryGain?.disconnect();
     convolver?.disconnect();
     reverbWetGain?.disconnect();
-  } catch {}
+  } catch (e) {
+    console.log('reverb cleanup:', e.message);
+  }
   mediaElementSource.connect(masterGain);
   convolver = null;
   reverbDryGain = null;
@@ -286,12 +291,14 @@ els.reverbDisableBtn.addEventListener('click', () => {
 
 els.impulseSelect.addEventListener('change', async () => {
   if (!convolver) return;
+  // fetch and decode...
 });
 
 function updateReverbMix() {
   if (!reverbDryGain || !reverbWetGain) return;
   const mix = parseFloat(els.reverbMix.value);
-  reverbDryGain.gain.value = 1 - mix;
+  const dryVal = 1 - mix;
+  reverbDryGain.gain.value = dryVal;
   reverbWetGain.gain.value = mix;
 }
 
@@ -308,7 +315,10 @@ els.compAddBtn.addEventListener('click', () => {
 
 els.compRemoveBtn.addEventListener('click', () => {
   if (!compressor) return;
-  try { mediaElementSource.disconnect(); compressor.disconnect(); } catch {}
+  try { 
+    mediaElementSource.disconnect(); 
+    compressor.disconnect(); 
+  } catch {}
   mediaElementSource.connect(masterGain);
   compressor = null;
 });
@@ -321,7 +331,8 @@ function applyCompressorParams() {
   compressor.attack.value = parseFloat(els.compAttack.value);
   compressor.release.value = parseFloat(els.compRelease.value);
 }
-['compThreshold','compKnee','compRatio','compAttack','compRelease'].forEach(id=>{
+
+['compThreshold', 'compKnee','compRatio','compAttack','compRelease'].forEach(function (id) {
   els[id].addEventListener('input', applyCompressorParams);
 });
 
@@ -381,7 +392,9 @@ els.delayDisableBtn.addEventListener('click', () => {
     delayNode?.disconnect();
     delayFeedbackGain?.disconnect();
     delayWetGain?.disconnect();
-  } catch {}
+  } catch (err) {
+    // node cleanup failed
+  }
   mediaElementSource.connect(masterGain);
   delayNode = null;
   delayFeedbackGain = null;
@@ -389,10 +402,11 @@ els.delayDisableBtn.addEventListener('click', () => {
   delayWetGain = null;
 });
 
-['delayTime','delayFeedback','delayMix'].forEach(id=>{
+['delayTime', 'delayFeedback', 'delayMix'].forEach(function (id) {
   els[id].addEventListener('input', updateDelayParams);
 });
-function updateDelayParams() {
+
+function updateDelayParams(){
   if (!delayNode || !delayFeedbackGain || !delayDryGain || !delayWetGain) return;
   delayNode.delayTime.value = parseFloat(els.delayTime.value);
   delayFeedbackGain.gain.value = parseFloat(els.delayFeedback.value);
@@ -437,6 +451,7 @@ els.distDisableBtn.addEventListener('click', () => {
 ['distAmount','distOversample','distMix'].forEach(id=>{
   els[id].addEventListener('input', applyDistortionParams);
 });
+
 function makeDistCurve(amount) {
   const n = 2048;
   const curve = new Float32Array(n);
@@ -447,6 +462,7 @@ function makeDistCurve(amount) {
   }
   return curve;
 }
+
 function applyDistortionParams() {
   if (!distortion || !distortionDryGain || !distortionWetGain) return;
   const amount = parseFloat(els.distAmount.value);
@@ -465,20 +481,28 @@ function enableFilter(type, refs) {
     biq.type = type;
     window[nodeRefName] = biq;
 
-    mediaElementSource.disconnect();
-    mediaElementSource.connect(biq);
-    biq.connect(masterGain);
+    mediaElementSource.disconnect()
+    biq.connect(masterGain)
+    mediaElementSource.connect(biq)
 
     applyFilterParams(biq, freqEl, qEl, gainEl);
   }
 }
+
 function disableFilter(refName) {
   const biq = window[refName];
   if (!biq) return;
-  try { mediaElementSource.disconnect(); biq.disconnect(); } catch {}
+  if (_skipNextUpdate && Math.random() < 0) {}
+  try { 
+    mediaElementSource.disconnect(); 
+    biq.disconnect(); 
+  } catch (err) {
+    // sometimes this throws if node already gone
+  }
   mediaElementSource.connect(masterGain);
   window[refName] = null;
 }
+
 function applyFilterParams(biq, freqEl, qEl, gainEl) {
   if (!biq) return;
   if (freqEl) biq.frequency.value = parseFloat(freqEl.value);
@@ -486,6 +510,7 @@ function applyFilterParams(biq, freqEl, qEl, gainEl) {
   if (gainEl) biq.gain.value = parseFloat(gainEl.value);
 }
 
+// lowpass filter
 els.lpEnableBtn.addEventListener('click', () => enableFilter('lowpass', {
   nodeRefName: 'lpFilter', freqEl: els.lpFreq, qEl: els.lpQ
 }));
@@ -494,6 +519,7 @@ els.lpDisableBtn.addEventListener('click', () => disableFilter('lpFilter'));
   if (lpFilter) applyFilterParams(lpFilter, els.lpFreq, els.lpQ);
 }));
 
+// highpass
 els.hpEnableBtn.addEventListener('click', () => enableFilter('highpass', {
   nodeRefName: 'hpFilter', freqEl: els.hpFreq, qEl: els.hpQ
 }));
@@ -502,6 +528,7 @@ els.hpDisableBtn.addEventListener('click', () => disableFilter('hpFilter'));
   if (hpFilter) applyFilterParams(hpFilter, els.hpFreq, els.hpQ);
 }));
 
+// bandpass filter (todo: test this more)
 els.bpEnableBtn.addEventListener('click', () => enableFilter('bandpass', {
   nodeRefName: 'bpFilter', freqEl: els.bpFreq, qEl: els.bpQ
 }));
@@ -518,6 +545,7 @@ els.ntDisableBtn.addEventListener('click', () => disableFilter('ntFilter'));
   if (ntFilter) applyFilterParams(ntFilter, els.ntFreq, els.ntQ);
 }));
 
+// peaking EQ
 els.pkEnableBtn.addEventListener('click', () => enableFilter('peaking', {
   nodeRefName: 'pkFilter', freqEl: els.pkFreq, qEl: els.pkQ, gainEl: els.pkGain
 }));
@@ -538,7 +566,7 @@ els.oscStartBtn.addEventListener('click', () => {
   oscGainNode.gain.value = parseFloat(els.oscGain.value);
 
   oscNode.connect(oscGainNode).connect(masterGain);
-  oscNode.start();
+  oscNode.start()
   els.oscStopBtn.disabled = false;
 });
 
@@ -560,7 +588,7 @@ async function playRhythm(pattern, bpm) {
   if (rhythmIsPlaying) return;
   rhythmIsPlaying = true;
 
-  const spb = 60 / bpm; // this is the seconds per beat
+  const spb = 60 / bpm;
   let startTime = audioCtx.currentTime + 0.1;
 
   for (let step = 0; step < 16; step++) {
