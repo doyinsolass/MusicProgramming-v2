@@ -49,6 +49,7 @@ const els = {
   compKnee: document.getElementById('compKnee'),
   compRatio: document.getElementById('compRatio'),
   compAttack: document.getElementById('compAttack'),
+  
   compRelease: document.getElementById('compRelease'),
   compAddBtn: document.getElementById('compAddBtn'),
   compRemoveBtn: document.getElementById('compRemoveBtn'),
@@ -85,12 +86,14 @@ const els = {
 
   ntFreq: document.getElementById('ntFreq'),
   ntQ: document.getElementById('ntQ'),
+
   ntEnableBtn: document.getElementById('ntEnableBtn'),
   ntDisableBtn: document.getElementById('ntDisableBtn'),
 
   pkFreq: document.getElementById('pkFreq'),
   pkQ: document.getElementById('pkQ'),
   pkGain: document.getElementById('pkGain'),
+
   pkEnableBtn: document.getElementById('pkEnableBtn'),
   pkDisableBtn: document.getElementById('pkDisableBtn'),
 
@@ -98,6 +101,7 @@ const els = {
   oscFreq: document.getElementById('oscFreq'),
   oscDetune: document.getElementById('oscDetune'),
   oscGain: document.getElementById('oscGain'),
+
   oscStartBtn: document.getElementById('oscStartBtn'),
   oscStopBtn: document.getElementById('oscStopBtn'),
 
@@ -106,7 +110,6 @@ const els = {
   playRhythm2Btn: document.getElementById('playRhythm2Btn'),
 };
 
-// ----- Setup -----
 function ensureCtx() {
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -129,7 +132,6 @@ function connectMediaElement() {
   ensureCtx();
   if (!mediaElementSource) {
     mediaElementSource = audioCtx.createMediaElementSource(els.htmlAudio);
-    // Default: mediaElementSource -> masterGain
     mediaElementSource.connect(masterGain);
   }
 }
@@ -558,12 +560,12 @@ async function playRhythm(pattern, bpm) {
   if (rhythmIsPlaying) return;
   rhythmIsPlaying = true;
 
-  const spb = 60 / bpm; // seconds per beat
+  const spb = 60 / bpm; // this is the seconds per beat
   let startTime = audioCtx.currentTime + 0.1;
 
   for (let step = 0; step < 16; step++) {
-    const t = startTime + step * (spb / 4); // 16th notes
-    const hit = pattern[step]; // 
+    const t = startTime + step * (spb / 4);  
+    const hit = pattern[step]; 
     if (hit.kick && rhythmBuffers.kick) triggerBuffer(rhythmBuffers.kick, t, 1.0);
     if (hit.snare && rhythmBuffers.snare) triggerBuffer(rhythmBuffers.snare, t, 0.9);
     if (hit.hat && rhythmBuffers.hat) triggerBuffer(rhythmBuffers.hat, t, 0.6);

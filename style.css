@@ -1,4 +1,5 @@
-* {
+* 
+{
   box-sizing: border-box;
 }
 
@@ -21,7 +22,8 @@ footer {
   border-bottom: none;
 }
 
-main {
+main 
+{
   padding: 16px;
   max-width: 900px;
   margin: 0 auto;
@@ -44,7 +46,8 @@ h1, h2 {
   align-items: center;
 }
 
-.grid {
+.grid 
+{
   display: grid;
   gap: 12px;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -55,12 +58,14 @@ fieldset {
   padding: 10px;
 }
 
-legend {
+legend 
+{
   font-size: 14px;
   color: #333;
 }
 
-label {
+label 
+{
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -96,13 +101,15 @@ button:disabled {
   gap: 6px;
 }
 
-#analyserCanvas {
+#analyserCanvas 
+{
   width: 100%;
   height: 200px;
   background: #000;
 }
 
-.file-label {
+.file-label 
+{
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -111,12 +118,14 @@ button:disabled {
 }
 
 .transport,
-.export {
+.export 
+{
   display: inline-flex;
   align-items: center;
   gap: 10px;
 }
 
-.hidden {
+.hidden 
+{
   display: none;
 }
