@@ -631,4 +631,119 @@ els.playRhythm2Btn.addEventListener('click', () => {
   playRhythm(pattern, bpm);
 });
 
+/* Visualization & perf helpers */
+
+// Call once to set up DPR scaling:
+function setupCanvasDPR(canvas) {
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = Math.round(rect.width * dpr);
+  canvas.height = Math.round(rect.height * dpr);
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // scale drawing to CSS pixels
+  return ctx;
+}
+
+let viz = {
+  rafId: null,
+  running: false,
+  analyser: null,
+  dataArray: null,
+  ctx: null,
+  canvas: document.getElementById('analyserCanvas'),
+  lastMousePan: 0
+};
+
+function initVisualizer(analyserNode) {
+  viz.analyser = analyserNode;
+  viz.canvas = viz.canvas || document.getElementById('analyserCanvas');
+  viz.ctx = setupCanvasDPR(viz.canvas);
+  // allocate buffer once
+  viz.dataArray = new Uint8Array(viz.analyser.frequencyBinCount);
+  // stop if page hidden
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) stopViz(); else if (shouldRunAudio()) startViz();
+  }, { passive: true });
+  // responsive resize: recalc DPR only on resize (throttled)
+  let resizeTimer = null;
+  window.addEventListener('resize', () => {
+    if (resizeTimer) clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => { viz.ctx = setupCanvasDPR(viz.canvas); }, 150);
+  }, { passive: true });
+}
+
+// Determine whether audio playback/osc is running; adapt to your app state variable
+function shouldRunAudio() {
+  // Replace or adapt this check to your playback state variables:
+  // e.g. return isPlaying || oscIsRunning;
+  try { return !(audio.paused && !oscRunning); } catch (e) { return false; }
+}
+
+function startViz() {
+  if (!viz.analyser || viz.running) return;
+  viz.running = true;
+  function draw() {
+    if (!viz.running) return;
+    // sample once
+    viz.analyser.getByteFrequencyData(viz.dataArray);
+    const ctx = viz.ctx;
+    const canvas = viz.canvas;
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    // clear fast
+    ctx.clearRect(0, 0, w, h);
+    // draw spectrum (lightweight fill)
+    const barWidth = Math.max(1, Math.floor(w / viz.dataArray.length));
+    ctx.fillStyle = 'rgba(90,220,200,0.9)';
+    for (let i = 0; i < viz.dataArray.length; i++) {
+      const v = viz.dataArray[i] / 255;
+      const x = i * barWidth;
+      const barH = v * h;
+      ctx.fillRect(x, h - barH, barWidth - 1, barH);
+    }
+    viz.rafId = requestAnimationFrame(draw);
+  }
+  viz.rafId = requestAnimationFrame(draw);
+}
+
+function stopViz() {
+  if (!viz.running) return;
+  viz.running = false;
+  if (viz.rafId) cancelAnimationFrame(viz.rafId);
+  viz.rafId = null;
+  // clear canvas when stopped
+  if (viz.ctx && viz.canvas) viz.ctx.clearRect(0, 0, viz.canvas.clientWidth, viz.canvas.clientHeight);
+}
+
+/* Throttled mouse panning hook (use instead of binding directly) */
+function addThrottledPointerPan(element, handler, ms = 50) {
+  let last = 0;
+  element.addEventListener('pointermove', (ev) => {
+    const now = performance.now();
+    if (now - last < ms) return;
+    last = now;
+    handler(ev);
+  }, { passive: true });
+}
+
+// Example use in your code (adapt variables):
+// initVisualizer(analyserNode);
+// when playback starts: startViz();
+// when playback pauses/stops: stopViz();
+// connect pointer pan: addThrottledPointerPan(document, (e) => { /* update panner based on e.clientX */ });
+
+/* Also: suspend/resume AudioContext when idle (save CPU) */
+async function ensureAudioContextSuspended(audioCtx) {
+  if (!audioCtx) return;
+  if (audioCtx.state === 'running' && !shouldRunAudio()) {
+    try { await audioCtx.suspend(); } catch (e) { /* ignore */ }
+  }
+}
+async function ensureAudioContextRunning(audioCtx) {
+  if (!audioCtx) return;
+  if (audioCtx.state === 'suspended' && shouldRunAudio()) {
+    try { await audioCtx.resume(); } catch (e) { /* ignore */ }
+  }
+}
+
 
