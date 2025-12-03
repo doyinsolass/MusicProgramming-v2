@@ -746,4 +746,9 @@ async function ensureAudioContextRunning(audioCtx) {
   }
 }
 
+// Keep loop state in sync while playing
+els.loopToggle.addEventListener('change', () => {
+  if (els.htmlAudio) els.htmlAudio.loop = els.loopToggle.checked;
+});
+
 
